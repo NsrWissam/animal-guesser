@@ -10,9 +10,14 @@ def doc_generator(df):
     for index, document in df_iter:
         animal_name = document.animal
         dict_doc = document.to_dict()
+<<<<<<< HEAD
+        yield {
+                "_index": 'zoo_v3',
+=======
         del dict_doc["animal"]
         yield {
                 "_index": 'zoo_v2',
+>>>>>>> master
                 "_id" : f"{animal_name}",
                 "_source": dict_doc,
             }
@@ -134,6 +139,10 @@ for i, row in df.iterrows():
     
 es = Elasticsearch(hosts=["https://70fa05be281c4ff8977b2a9e557f7690.westeurope.azure.elastic-cloud.com:9243/"], http_auth=("elastic","dpucymmIkDh7iOMjbUFFaRqA"))
 
+<<<<<<< HEAD
+es.indices.create(index='zoo_v3', ignore=400)
+=======
 es.indices.create(index='zoo_v2', ignore=400)
+>>>>>>> master
     
 helpers.bulk(es, doc_generator(doc_df))
