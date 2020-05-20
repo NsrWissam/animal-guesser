@@ -25,7 +25,9 @@ def recognize_speech_from_mic(recognizer, microphone):
     # adjust the recognizer sensitivity to ambient noise and record audio
     # from the microphone
     with microphone as source:
+        print("Adjusting for ambient noise...")
         recognizer.adjust_for_ambient_noise(source)
+        print("Waiting for your answer: ")
         audio = recognizer.listen(source)
 
     # set up the response object
