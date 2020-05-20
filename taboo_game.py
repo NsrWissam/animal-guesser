@@ -76,7 +76,6 @@ word2 = taboo_words(filtered_text, card)[1]
 word3 = taboo_words(filtered_text, card)[2]
 print('The card you have to make the agent guess is a ' + card + ' and you cannot say the words: ' + word1 + ', ' + word2 + ' and ' + word3+ '.')
 SpeakText('The card you have to make the agent guess is a ' + card + ' and you cannot say the words ' + word1 + ' ' + word2 + ' and ' + word3)
-SpeakText("Let's play!")
 
 #Create recognizer and mic instances
 recognizer = sr.Recognizer()
@@ -88,8 +87,8 @@ PROMPT_LIMIT = 5
 memory_guess = []
 guess_turn=0
 
-print('Describe!')
-SpeakText('Describe!')
+SpeakText("Let's play!")
+print("Let's play!')
 for j in range(PROMPT_LIMIT):
     description = recognize_speech_from_mic(recognizer, microphone)
     if description["transcription"]:
@@ -130,7 +129,6 @@ for i in range(NUM_GUESSES):
 
     
     for j in range(PROMPT_LIMIT):
-        print('Waiting for your answer: ')
         answer = recognize_speech_from_mic(recognizer, microphone)
         if answer["transcription"]:
             break
@@ -147,18 +145,14 @@ for i in range(NUM_GUESSES):
     # show the user the transcription
     print("{}".format(answer["transcription"])) 
 
-    # determine if guess is correct and if any attempts remain
-    guess_is_correct = answer["transcription"] == 'yes'
-    agent_has_more_attempts = i < NUM_GUESSES - 1
-
     # determine if the user has won the game
     # if not, repeat the loop if user has more attempts
     # if no attempts left, the user loses the game
-    if guess_is_correct:
+    if("yes" in answer["transcription"]):
         print("Correct! I won!")
         SpeakText("Correct! I won!")
         break
-    elif agent_has_more_attempts:
+    elif(i < NUM_GUESSES - 1):
         if answer["transcription"]:
             #if not correct and agent has more attempts, add the additional information provided after the 'no'
             more_info = answer["transcription"].split()
