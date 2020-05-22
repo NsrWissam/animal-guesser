@@ -1,4 +1,7 @@
 
 *.pyc
 .ipynb_checkpoints/*
+<<<<<<< HEAD
 .ipynb_checkpoints/AnimalGuesserFront-checkpoint.ipynb
+=======
+>>>>>>> master
