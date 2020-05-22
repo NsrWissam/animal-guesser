@@ -1,4 +1,5 @@
 # Author: Miguel Martinez Lopez
+# http://code.activestate.com/recipes/580757-chatbox-megawidget-for-tkinter/
 
 import datetime
 import collections
