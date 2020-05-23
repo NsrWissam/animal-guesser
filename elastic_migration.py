@@ -27,6 +27,7 @@ df.drop(df[df['animal'] == 'clam' ].index , inplace=True)
 df.drop(df[df['animal'] == 'cavy' ].index , inplace=True)
 df.drop(df[df['animal'] == 'crab' ].index , inplace=True)
 df.drop(df[df['animal'] == 'dogfish' ].index , inplace=True)
+df.drop(df[df['animal'] == 'seawasp' ].index , inplace=True)
 
 animals = df.animal.tolist()
 animals[2] = 'Bass (fish)'
@@ -46,12 +47,12 @@ animals[60] = 'Cougar'
 animals[61] = 'Domestic cat'
 animals[64] = 'Rhea (bird)'
 animals[67] = 'Pinniped'
-animals[71] = 'skimmer (bird)'
-animals[75] = 'sole (fish)'
-animals[76] = 'House sparrow'
-animals[85] = 'Tuna fish'
-animals[86] = 'Vampire bat'
-animals[92] = 'earthworm'
+animals[70] = 'Skimmer (bird)'
+animals[74] = 'sole (fish)'
+animals[75] = 'House sparrow'
+animals[84] = 'Tuna fish'
+animals[85] = 'Vampire bat'
+animals[91] = 'earthworm'
 
 animal_names = df.animal.tolist()
 
