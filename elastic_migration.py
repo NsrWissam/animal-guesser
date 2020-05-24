@@ -10,6 +10,8 @@ def doc_generator(df):
     for index, document in df_iter:
         animal_name = document.animal
         dict_doc = document.to_dict()
+        print(dict_doc)
+        print(f"{animal_name}")
         yield {
                 "_index": 'zoo_v3',
                 "_id" : f"{animal_name}",
