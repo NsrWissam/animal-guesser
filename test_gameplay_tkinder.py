@@ -8,6 +8,7 @@ from tkinter import font, messagebox
 import tkinter
 import tkinter.ttk as tk
 from Chatbox import Chatbox
+import test_speech_to_txt
 import pandas as pd
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
@@ -144,12 +145,17 @@ class Gameplay():
         return new_string
 
     def update_chat_box(self, new_line):
+        #put in the code
         self.chatbox.user_message("AI", "give me a new line please", "computer")
-        self.chatbox.user_message("PLAYER", new_line, "player")
         self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
+        # put in the speech part
+        #user_speech = test_speech_to_txt.get_speech()
+        #self.chatbox.user_message("PLAYER", user_speech, "player")
+        self.chatbox.user_message("PLAYER", new_line, "player")
 
     def reset_chat_box(self):
         self.chatbox.user_message("", " --- THE GAME IS ENDED --- ", "computer")
+        self.chatbox.user_message("", " ", "computer")
         self.chatbox.user_message("", " ", "computer")
         self.chatbox.user_message("", " --- LETS START A NEW GAME --- ", "computer")
         self.chatbox.user_message("AI", "Hi there player.", "computer")
