@@ -4,26 +4,22 @@ import numpy as np
 
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import LinearSVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
 import pickle
 
-model1 = KNeighborsClassifier()
-model2 = RandomForestClassifier()
 model3 = LogisticRegression()
 model4 = LinearSVC()
 model5 = MLPClassifier()
 
-# model1 = pickle.load(open("trained_models_wiki/model1_KNC.p", "rb"))
-# model2 = pickle.load(open("trained_models_wiki/model2_RFC.p", "rb"))
-model3 = pickle.load(open("trained_models_wiki/model3_LGC.p", "rb"))
-model4 = pickle.load(open("trained_models_wiki/model4_LSVC.p", "rb"))
-model5 = pickle.load(open("trained_models_wiki/model5_MLPC.p", "rb"))
+loading_dir = 'trained_models_clean/'
 
-name_dict = pickle.load(open("trained_models_wiki/name_dict.p", "rb"))
-vectorizer = pickle.load(open("trained_models_wiki/tfidvector.p", "rb"))
+model3 = pickle.load(open(loading_dir + "model3_LGC.p", "rb"))
+model4 = pickle.load(open(loading_dir + "model4_LSVC.p", "rb"))
+model5 = pickle.load(open(loading_dir + "model5_MLPC.p", "rb"))
+
+name_dict = pickle.load(open(loading_dir + "name_dict.p", "rb"))
+vectorizer = pickle.load(open(loading_dir + "tfidvector.p", "rb"))
 
 
 def get_proba_per_model(test_phrase, models):
@@ -35,14 +31,14 @@ def get_proba_per_model(test_phrase, models):
         print("")
 
 
-def get_prediction_ranking(test_prhase, models_with_proba, models_wo_proba):
+def get_prediction_ranking(test_prhase_vect, models_with_proba, models_wo_proba):
     models_prob = np.zeros(len(list(name_dict.keys())))
     for model in models_with_proba:
-        values = list(model.predict_proba(test_prhase)[0])
+        values = list(model.predict_proba(test_prhase_vect)[0])
         models_prob = models_prob + values
 
     for model in models_wo_proba:
-        animal = model.predict(test_prhase)
+        animal = model.predict(test_prhase_vect)
         models_prob[animal] = models_prob[animal] + 0.03
 
     probab_tot = dict(zip(list(name_dict.keys()), models_prob))
@@ -68,7 +64,6 @@ for test in test_strings:
     print(test)
     transformed = vectorizer.transform([test]).todense()
     print(get_prediction_ranking(transformed, [model3, model5], [model4]))
-    print("")
     print("-------")
 
 test_strings = []
@@ -85,7 +80,6 @@ for test in test_strings:
     print(test)
     transformed = vectorizer.transform([test]).todense()
     print(get_prediction_ranking(transformed, [model3, model5], [model4]))
-    print("")
     print("-------")
 
 
