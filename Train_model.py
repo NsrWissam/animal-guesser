@@ -1,4 +1,4 @@
-# import data from elasticsearch database and train model
+# import data from elasticsearch database, train models and store data in pickle dump
 
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
@@ -8,30 +8,29 @@ import numpy as np
 
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import LinearSVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
 import pickle
 
-es = Elasticsearch(hosts=["https://70fa05be281c4ff8977b2a9e557f7690.westeurope.azure.elastic-cloud.com:9243/"],
-                   http_auth=("elastic", "dpucymmIkDh7iOMjbUFFaRqA"))
+es = Elasticsearch(hosts=["https://f613647524b24c5f849ec050b3e3fb1b.westeurope.azure.elastic-cloud.com:9243/"],
+                     http_auth=("elastic", "YuIRd4ooNHbat2TZaHkDejO1"))
 
+index_data = 'zoo_raw'
 
 # load only wiki data from elasticsearch database
 def load_wiki_data_to_lib():
-    data_dump = helpers.scan(es, query={"query": {"match_all": {}}}, scroll='1m', index='zoo_v4')  # like others so far
+    data_dump = helpers.scan(es, query={"query": {"match_all": {}}}, scroll='1m', index=index_data)  # like others so far
     for animal_data in data_dump:
-        an_label = animal_data['_source']['name']
+        an_label = animal_data['_source']['animal']
         an_info = animal_data['_source']['wiki']
         library_map_wiki.update({an_label: an_info})
 
 
 # load only zoo data from elasticsearch database
 def load_zoo_data_to_lib():
-    data_dump = helpers.scan(es, query={"query": {"match_all": {}}}, scroll='1m', index='zoo_v4')
+    data_dump = helpers.scan(es, query={"query": {"match_all": {}}}, scroll='1m', index=index_data)
     for animal_data in data_dump:
-        an_label = animal_data['_source']['name']
+        an_label = animal_data['_source']['animal']
         an_info = animal_data['_source']['words']
         separator = ' '
         an_info_str = separator.join(an_info)
@@ -40,14 +39,14 @@ def load_zoo_data_to_lib():
 
 # load zoo data and wiki data from database
 def load_all_data_to_lib():
-    data_dump = helpers.scan(es, query={"query": {"match_all": {}}}, scroll='1m', index='zoo_v4')
+    data_dump = helpers.scan(es, query={"query": {"match_all": {}}}, scroll='1m', index=index_data)
     for animal_data in data_dump:
-        an_label = animal_data['_source']['name']
+        an_label = animal_data['_source']['animal']
         an_info_wiki = animal_data['_source']['wiki']
         an_info_zoo = animal_data['_source']['words']
         separator = ' '
         an_info_zoo_str = ' ' + separator.join(an_info_zoo)
-        library_map_all.update({an_label: an_info_wiki + an_info_zoo_str})
+        library_map_all.update({an_label: an_info_wiki + ' ' + an_info_zoo_str})
 
 
 # translate all words in database towards a vector with tfidvectorizer
@@ -120,11 +119,11 @@ def get_X_y_training(training_lib):
     return x_train_dense, y_train
 
 
-def train_models(models, X, y):
+def train_models(models, x, y):
     print("-----")
     for model in models:
-        model.fit(X, y)
-        print("model trained_models_wiki")
+        model.fit(x, y)
+        print("model trained")
 
 
 # #########################
@@ -134,39 +133,39 @@ def train_models(models, X, y):
 # test correctly loaded data
 #print(library_map_all.get("wolf"))
 
+# create three possible dictionaries with data
 library_map_wiki = {}
 library_map_zoo = {}
 library_map_all = {}
 
+# load data to three libraries
 load_zoo_data_to_lib()
 load_wiki_data_to_lib()
 load_all_data_to_lib()
 
-training_data = create_training_xy(library_map_wiki, 10)
+#choose library to train models on
+library_def = library_map_all
+
+training_data = create_training_xy(library_def, 10)
 
 X, y = get_X_y_training(training_data)
 
-# model1 = KNeighborsClassifier()
-# model2 = RandomForestClassifier()
 model3 = LogisticRegression()
 model4 = LinearSVC()
 model5 = MLPClassifier()
-#
+
 train_models([model3, model4, model5], X, y)
-#
-# print(model1.score(X, y))
-# print(model2.score(X, y))
+
 print(model3.score(X, y))
 print(model4.score(X, y))
 print(model5.score(X, y))
-#
-# pickle.dump(model1, open("trained_models_wiki/model1_KNC.p", "wb"))
-# pickle.dump(model2, open("trained_models_wiki/model2_RFC.p", "wb"))
-pickle.dump(model3, open("trained_models_wiki/model3_LGC.p", "wb"))
-pickle.dump(model4, open("trained_models_wiki/model4_LSVC.p", "wb"))
-pickle.dump(model5, open("trained_models_wiki/model5_MLPC.p", "wb"))
 
-pickle.dump(create_name_dict(library_map_wiki), open("trained_models_wiki/name_dict.p", "wb"))
+storing_dir = 'trained_models_wiki_raw/'
+pickle.dump(model3, open(storing_dir + "model3_LGC.p", "wb"))
+pickle.dump(model4, open(storing_dir + "model4_LSVC.p", "wb"))
+pickle.dump(model5, open(storing_dir + "model5_MLPC.p", "wb"))
+
+pickle.dump(create_name_dict(library_def), open(storing_dir + "name_dict.p", "wb"))
 vectorizer = TfidfVectorizer()
-vectorizer = vectorizer.fit(library_map_wiki.values())
-pickle.dump(vectorizer, open("trained_models_wiki/tfidvector.p", "wb"))
+vectorizer = vectorizer.fit(library_def.values())
+pickle.dump(vectorizer, open(storing_dir + "tfidvector.p", "wb"))
