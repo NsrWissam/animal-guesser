@@ -26,54 +26,66 @@ name_dict = pickle.load(open("trained_models_wiki/name_dict.p", "rb"))
 vectorizer = pickle.load(open("trained_models_wiki/tfidvector.p", "rb"))
 
 
-def get_prediction_ranking_2(test_phrase, models):
-    # TODO
-    results_tot = np.zeros(len(name_dict.keys()))
+def get_proba_per_model(test_phrase, models):
     for model in models:
-        prediction = model.predict_proba(test_phrase)[0]
-        for j in range(1, 6):
-            i = 0
-            highest = 0
-            index = 0
-            for probab in prediction:
-                if probab > highest:
-                    highest = probab
-                    index = i
-                i = i + 1
-            prediction[index] = 0
-            results_tot[index] = results_tot[index] + (6 - j)
-    ranking = {}
-    for j in range(1, 6):
-        i = 0
-        highest = 0
-        index = 0
-        for result in results_tot:
-            if result > highest:
-                highest = result
-                index = i
-            i = i + 1
-        results_tot[index] = 0
-        ranking.update({list(name_dict.keys())[index]: highest})
-
-    return ranking
+        i=0
+        for probab in model.predict_proba(test_phrase)[0]:
+            print(list(name_dict.keys())[i]+ ": " + str(round(probab*100,2)) + " %")
+            i = i+1
+        print("")
 
 
-test = vectorizer.transform(["pink bird one foot"]).todense()
-print(get_prediction_ranking_2(test, [model3, model5]))
-print(list(name_dict.keys())[int(model4.predict(test))])
+def get_prediction_ranking(test_prhase, models_with_proba, models_wo_proba):
+    models_prob = np.zeros(len(list(name_dict.keys())))
+    for model in models_with_proba:
+        values = list(model.predict_proba(test_prhase)[0])
+        models_prob = models_prob + values
 
-test = vectorizer.transform(["lobster river"]).todense()
-print(get_prediction_ranking_2(test, [model3, model5]))
-print(list(name_dict.keys())[int(model4.predict(test))])
+    for model in models_wo_proba:
+        animal = model.predict(test_prhase)
+        models_prob[animal] = models_prob[animal] + 0.03
 
-test = vectorizer.transform(["black and white bird"]).todense()
-print(get_prediction_ranking_2(test, [model3, model5]))
-print(list(name_dict.keys())[int(model4.predict(test))])
+    probab_tot = dict(zip(list(name_dict.keys()), models_prob))
+    ranking = sorted(probab_tot.items(), key=lambda x: x[1], reverse=True)
+    som = 0
+    for i in range(0, 5):
+        som = som + ranking[i][1]
 
-test = vectorizer.transform(["cat"]).todense()
-print(get_prediction_ranking_2(test, [model3, model5]))
-print(list(name_dict.keys())[int(model4.predict(test))])
+    ranking_dict = {}
+    for i in range(0, 5):
+        ranking_dict.update({ranking[i][0]: ranking[i][1]/som*100})
 
-print(list(name_dict.keys()))
+    return ranking_dict
+
+
+test_strings = []
+test_strings.append("bird")
+test_strings.append("pink bird")
+test_strings.append("pink bird one foot")
+test_strings.append("pink bird one foot africa")
+
+for test in test_strings:
+    print(test)
+    transformed = vectorizer.transform([test]).todense()
+    print(get_prediction_ranking(transformed, [model3, model5], [model4]))
+    print("")
+    print("-------")
+
+test_strings = []
+test_strings.append("bird")
+test_strings.append("black and white bird")
+test_strings.append("black and white bird south pole")
+test_strings.append("black and white bird south pole lives in colonies")
+test_strings.append("black and white flightless bird south pole lives in colonies")
+test_strings.append("Southern Hemisphere cold climates such as Antarctica south flightless colonies movie happy feet emperor king")
+
+# The largest living species is the emperor penguin (Aptenodytes forsteri):[1] on average, adults are about 1.1 m (3 ft 7 in) tall and weigh 35 kg (77 lb). The smallest penguin species is the little blue penguin (Eudyptula minor), also kn
+
+for test in test_strings:
+    print(test)
+    transformed = vectorizer.transform([test]).todense()
+    print(get_prediction_ranking(transformed, [model3, model5], [model4]))
+    print("")
+    print("-------")
 
 
