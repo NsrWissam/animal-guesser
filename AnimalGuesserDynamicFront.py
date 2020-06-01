@@ -4,18 +4,14 @@
 # http://code.activestate.com/recipes/580757-chatbox-megawidget-for-tkinter/
 #
 
-from tkinter import font, messagebox
 import tkinter
 import tkinter.ttk as tk
 from Chatbox import Chatbox
-import pandas as pd
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
-import time
 from Front_speech_from_mic import recognize_speech_from_mic
 import json
 import speech_recognition as sr
-import random
 import inflect
 import operator
 import collections
@@ -121,7 +117,8 @@ class Gameplay():
         self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
 
         self.b_rec = tk.Button(self.game_frame, text='Describe', width=10, style='start.TButton',
-                               command=self.recognize_text).pack(pady=(2, 2))
+                               command=self.recognize_text)
+        self.b_rec.pack(pady=(2, 2))
 
         self.b_home = tk.Button(self.game_frame, text='End Game', width=15, style='exit.TButton',
                                 command=self.show_home_frame).pack()
@@ -143,10 +140,9 @@ class Gameplay():
         self.selection_frame.pack_forget()
         self.lb_frame.pack_forget()
         self.home_menu.pack(fill=tkinter.BOTH, expand=1)
+        self.root.after_cancel(self.time_out_job)
         if not self.game_running:
             self.reset_game()
-        self.root.after_cancel(self.time_out_job)
-        print("put the game to an end -> game running on False and chatbox resetted")
 
     def recognize_text(self):
         self.recognizer = sr.Recognizer()
@@ -163,6 +159,7 @@ class Gameplay():
                     self.update_chat_box_player("Yes")
                     self.update_chat_box_ai("Correct! I won!")
                     self.root.after_cancel(self.time_out_job)
+                    self.b_rec.state(["disabled"])
                     self.description["transcription"] = False
                     self.game_running = False
                 else:
