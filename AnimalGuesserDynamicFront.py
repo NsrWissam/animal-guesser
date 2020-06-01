@@ -241,11 +241,6 @@ class Gameplay():
 
 
     def reset_chat_box(self):
-        # self.chatbox.user_message("", " --- THE GAME IS ENDED --- ", "computer")
-        # self.chatbox.user_message("", " ", "computer")
-        # self.chatbox.user_message("", " ", "computer")
-        # self.chatbox.user_message("", " --- LETS START A NEW GAME --- ", "computer")
-        # self.chatbox.user_message("AI", "Hi there player, press the Describe button when you are ready to play!", "computer")
         self.chatbox.clear()
         self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
 
