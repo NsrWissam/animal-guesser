@@ -239,7 +239,7 @@ class Gameplay():
         return json.dumps(search_object)
 
     def taboo_game(self, player_description):
-        guesses_scoring = self.es.search(index='zoo_raw', body=self.search_func(player_description))
+        guesses_scoring = self.es.search(index='zoo_cleaned', body=self.search_func(player_description))
         for i in range(0, len(guesses_scoring)):
             guess = guesses_scoring['hits']['hits'][i]['_id']
             if guess not in self.memory_guess:
@@ -254,12 +254,12 @@ class Gameplay():
         self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
 
     def reset_game(self):
-        self.reset_chat_box()
-        self.show_home_frame()
         self.steps = 0
         self.game_running = False
         self.call = 0
         self.memory_guess = []
+        self.reset_chat_box()
+        self.show_home_frame()
 
     def show_selection_frame(self):
         self.game_frame.pack_forget()
