@@ -8,78 +8,76 @@ from sklearn.linear_model import LogisticRegression
 
 import pickle
 
-model3 = LogisticRegression()
-model4 = LinearSVC()
-model5 = MLPClassifier()
 
-loading_dir = 'trained_models_clean/'
+class AnimalPredictor():
+    def __init__(self):
+        self.model3 = LogisticRegression()
+        self.model4 = LinearSVC()
+        self.model5 = MLPClassifier()
 
-model3 = pickle.load(open(loading_dir + "model3_LGC.p", "rb"))
-model4 = pickle.load(open(loading_dir + "model4_LSVC.p", "rb"))
-model5 = pickle.load(open(loading_dir + "model5_MLPC.p", "rb"))
+        self.loading_dir = 'trained_models_clean/'
 
-name_dict = pickle.load(open(loading_dir + "name_dict.p", "rb"))
-vectorizer = pickle.load(open(loading_dir + "tfidvector.p", "rb"))
+        self.model3 = pickle.load(open(self.loading_dir + "model3_LGC.p", "rb"))
+        self.model4 = pickle.load(open(self.loading_dir + "model4_LSVC.p", "rb"))
+        self.model5 = pickle.load(open(self.loading_dir + "model5_MLPC.p", "rb"))
 
+        self.name_dict = pickle.load(open(self.loading_dir + "name_dict.p", "rb"))
+        self.vectorizer = pickle.load(open(self.loading_dir + "tfidvector.p", "rb"))
 
-def get_proba_per_model(test_phrase, models):
-    for model in models:
-        i=0
-        for probab in model.predict_proba(test_phrase)[0]:
-            print(list(name_dict.keys())[i]+ ": " + str(round(probab*100,2)) + " %")
-            i = i+1
-        print("")
+        self.models_with_proba = [self.model3, self.model5]
+        self.models_wo_proba = [self.model4]
 
+    def tranfsform_string_to_vec(self, word_string):
+        transformed_vec = self.vectorizer.transform([word_string]).todense()
+        return transformed_vec
 
-def get_prediction_ranking(test_prhase_vect, models_with_proba, models_wo_proba):
-    models_prob = np.zeros(len(list(name_dict.keys())))
-    for model in models_with_proba:
-        values = list(model.predict_proba(test_prhase_vect)[0])
-        models_prob = models_prob + values
+    def get_prediction_ranking(self, test_phrase_string):
+        test_phrase_vec = self.tranfsform_string_to_vec(test_phrase_string)
+        models_prob = np.zeros(len(list(self.name_dict.keys())))
+        for model in self.models_with_proba:
+            values = list(model.predict_proba(test_phrase_vec)[0])
+            models_prob = models_prob + values
 
-    for model in models_wo_proba:
-        animal = model.predict(test_prhase_vect)
-        models_prob[animal] = models_prob[animal] + 0.03
+        for model in self.models_wo_proba:
+            animal = model.predict(test_phrase_vec)
+            models_prob[animal] = models_prob[animal] + 0.03
 
-    probab_tot = dict(zip(list(name_dict.keys()), models_prob))
-    ranking = sorted(probab_tot.items(), key=lambda x: x[1], reverse=True)
-    som = 0
-    for i in range(0, 5):
-        som = som + ranking[i][1]
+        probab_tot = dict(zip(list(self.name_dict.keys()), models_prob))
+        ranking = sorted(probab_tot.items(), key=lambda x: x[1], reverse=True)
+        som = 0
+        for i in range(0, 5):
+            som = som + ranking[i][1]
 
-    ranking_dict = {}
-    for i in range(0, 5):
-        ranking_dict.update({ranking[i][0]: ranking[i][1]/som*100})
+        ranking_dict = {}
+        for i in range(0, 5):
+            ranking_dict.update({ranking[i][0]: ranking[i][1] / som * 100})
 
-    return ranking_dict
+        return ranking_dict
 
+    def get_prediction_ranking_exclude_wrong_animals(self, test_phrase_string, wrong_animals):
+        test_phrase_vec = self.tranfsform_string_to_vec(test_phrase_string)
+        models_prob = np.zeros(len(list(self.name_dict.keys())))
+        for model in self.models_with_proba:
+            values = list(model.predict_proba(test_phrase_vec)[0])
+            models_prob = models_prob + values
 
-test_strings = []
-test_strings.append("bird")
-test_strings.append("pink bird")
-test_strings.append("pink bird one foot")
-test_strings.append("pink bird one foot africa")
+        for model in self.models_wo_proba:
+            animal = model.predict(test_phrase_vec)
+            models_prob[animal] = models_prob[animal] + 0.03
 
-for test in test_strings:
-    print(test)
-    transformed = vectorizer.transform([test]).todense()
-    print(get_prediction_ranking(transformed, [model3, model5], [model4]))
-    print("-------")
+        probab_tot = dict(zip(list(self.name_dict.keys()), models_prob))
 
-test_strings = []
-test_strings.append("bird")
-test_strings.append("black and white bird")
-test_strings.append("black and white bird south pole")
-test_strings.append("black and white bird south pole lives in colonies")
-test_strings.append("black and white flightless bird south pole lives in colonies")
-test_strings.append("Southern Hemisphere cold climates such as Antarctica south flightless colonies movie happy feet emperor king")
+        for animal_to_remove in wrong_animals:
+            probab_tot.pop(animal_to_remove)
+            print("guessed wrong: " + animal_to_remove)
 
-# The largest living species is the emperor penguin (Aptenodytes forsteri):[1] on average, adults are about 1.1 m (3 ft 7 in) tall and weigh 35 kg (77 lb). The smallest penguin species is the little blue penguin (Eudyptula minor), also kn
+        ranking = sorted(probab_tot.items(), key=lambda x: x[1], reverse=True)
+        som = 0
+        for i in range(0, 5):
+            som = som + ranking[i][1]
 
-for test in test_strings:
-    print(test)
-    transformed = vectorizer.transform([test]).todense()
-    print(get_prediction_ranking(transformed, [model3, model5], [model4]))
-    print("-------")
+        ranking_dict = {}
+        for i in range(0, 5):
+            ranking_dict.update({ranking[i][0]: ranking[i][1] / som * 100})
 
-
+        return ranking_dict
