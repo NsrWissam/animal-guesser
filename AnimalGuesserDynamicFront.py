@@ -21,7 +21,6 @@ import operator
 import collections
 
 
-
 class Gameplay():
     def __init__(self):
         self.es = Elasticsearch(hosts=["https://f613647524b24c5f849ec050b3e3fb1b.westeurope.azure.elastic-cloud.com:9243/"], http_auth=("elastic","YuIRd4ooNHbat2TZaHkDejO1"))
@@ -43,10 +42,12 @@ class Gameplay():
         self.s = tk.Style()
         self.s.configure("exit.TButton", font=('Arial', '18', 'bold'))
         self.s.configure("start.TButton", font=('Arial', '18', 'bold'))
-        self.s.map('exit.TButton', foreground=[('pressed', 'dark red'), ('active', 'red')],
-              background=[('pressed', 'red'), ('active', 'red')])
-        self.s.map('start.TButton', foreground=[('pressed', 'dark green'), ('active', 'green')],
-              background=[('pressed', 'green'), ('active', 'green')])
+        self.s.map('exit.TButton',
+                   foreground=[('pressed', 'dark red'), ('active', 'red')],
+                   background=[('pressed', 'red'), ('active', 'red')])
+        self.s.map('start.TButton',
+                   foreground=[('pressed', 'dark green'), ('active', 'green')],
+                   background=[('pressed', 'green'), ('active', 'green')])
 
         self.s.configure("G.TLabel", font=('Arial', '20', 'bold'), foreground='green')
         self.s.configure("G.Sub.TLabel", font=('Arial', '15', 'bold'), foreground='dark green')
@@ -62,22 +63,13 @@ class Gameplay():
         # building home menu (FRAME)
         tk.Label(self.home_menu, text='Animal Guesser', style='G.TLabel').pack(pady=(30, 0))
         tk.Label(self.home_menu, text='A game based on the Taboo board game..', style='G.Sub.TLabel').pack(pady=(5, 50))
-        tk.Label(self.home_menu, text='The objective of this game is to describe an animal.', style='G.Desc.TLabel').pack(
-            pady=(20, 5))
-        tk.Label(self.home_menu, text='After every single description the AI will make a guess.',
-                 style='G.Desc.TLabel').pack(
-            pady=(0, 5))
-        tk.Label(self.home_menu, text='If the guess is correct you can answer with "Yes",', style='G.Desc.TLabel').pack(
-            pady=(0, 5))
-        tk.Label(self.home_menu, text='if the guess is wrong you must answer with "No"', style='G.Desc.TLabel').pack(
-            pady=(0, 5))
+        tk.Label(self.home_menu, text='The objective of this game is to describe an animal.', style='G.Desc.TLabel').pack(pady=(20, 5))
+        tk.Label(self.home_menu, text='After every single description the AI will make a guess.',style='G.Desc.TLabel').pack(pady=(0, 5))
+        tk.Label(self.home_menu, text='If the guess is correct you can answer with "Yes",', style='G.Desc.TLabel').pack(pady=(0, 5))
+        tk.Label(self.home_menu, text='if the guess is wrong you must answer with "No"', style='G.Desc.TLabel').pack(pady=(0, 5))
         tk.Label(self.home_menu, text='and provide a following description.', style='G.Desc.TLabel').pack()
-
-        tk.Button(self.home_menu, text='QUIT', width=18, style='exit.TButton', command=exit).pack(pady=(20, 60),
-                                                                                             side=tkinter.BOTTOM)
-        tk.Button(self.home_menu, text='PLAY', width=18, style='start.TButton', command=self.show_selection_frame).pack(
-            pady=(0, 20),
-            side=tkinter.BOTTOM)
+        tk.Button(self.home_menu, text='QUIT', width=18, style='exit.TButton', command=exit).pack(pady=(20, 60),side=tkinter.BOTTOM)
+        tk.Button(self.home_menu, text='PLAY', width=18, style='start.TButton', command=self.show_selection_frame).pack(pady=(0, 20),side=tkinter.BOTTOM)
 
         # building animal selection (FRAME)
         self.selected_animal = tkinter.StringVar()
@@ -249,11 +241,12 @@ class Gameplay():
 
 
     def reset_chat_box(self):
-        self.chatbox.user_message("", " --- THE GAME IS ENDED --- ", "computer")
-        self.chatbox.user_message("", " ", "computer")
-        self.chatbox.user_message("", " ", "computer")
-        self.chatbox.user_message("", " --- LETS START A NEW GAME --- ", "computer")
-        self.chatbox.user_message("AI", "Hi there player, press the Describe button when you are ready to play!", "computer")
+        # self.chatbox.user_message("", " --- THE GAME IS ENDED --- ", "computer")
+        # self.chatbox.user_message("", " ", "computer")
+        # self.chatbox.user_message("", " ", "computer")
+        # self.chatbox.user_message("", " --- LETS START A NEW GAME --- ", "computer")
+        # self.chatbox.user_message("AI", "Hi there player, press the Describe button when you are ready to play!", "computer")
+        self.chatbox.clear()
         self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
 
     def reset_game(self):

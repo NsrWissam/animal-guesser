@@ -56,7 +56,9 @@ class Chatbox(object):
 
     def clear(self):
         self._is_empty = True
+        self._textarea.config(state=NORMAL)
         self._textarea.delete('1.0', END)
+        self._textarea.config(state=DISABLED)
 
     def _filter_text(self, text):
         return "".join(ch for ch in text if ch <= u"\uFFFF")
