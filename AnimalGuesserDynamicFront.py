@@ -159,7 +159,6 @@ class Gameplay():
                     self.update_chat_box_player("Yes")
                     self.update_chat_box_ai("Correct! I won!")
                     self.root.after_cancel(self.time_out_job)
-                    self.b_rec.state(["disabled"])
                     self.description["transcription"] = False
                     self.game_running = False
                 else:
