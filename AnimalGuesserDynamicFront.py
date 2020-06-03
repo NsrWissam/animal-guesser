@@ -141,7 +141,7 @@ class Gameplay():
         self.lb_frame.pack_forget()
         self.home_menu.pack(fill=tkinter.BOTH, expand=1)
         self.root.after_cancel(self.time_out_job)
-        if not self.game_running:
+        if self.game_running:
             self.reset_game()
 
     def recognize_text(self):
