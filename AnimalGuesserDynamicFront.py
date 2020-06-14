@@ -143,7 +143,13 @@ class Gameplay():
         self.root.after_cancel(self.time_out_job)
         if self.game_running:
             self.reset_game()
+            
+###########################################################
+###############SPEECH RECOGNITION SCRIPT###################
+###########################################################
 
+#Inspired from https://realpython.com/python-speech-recognition/
+#Using Google Web Speech API
     def recognize_text(self):
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
@@ -154,34 +160,46 @@ class Gameplay():
         # After having the guess
         else:
             answer = recognize_speech_from_mic(self.recognizer, self.microphone)
+            #If no error (unable to recognize speech or API not available) in player's answer
             if answer["transcription"]:
+                #If agent's guess is correct
                 if "yes" in answer["transcription"]:
                     self.update_chat_box_player("Yes")
                     self.update_chat_box_ai("Correct! I won!")
                     self.root.after_cancel(self.time_out_job)
+                    #To end the game
                     self.description["transcription"] = False
                     self.game_running = False
+                #If agent's guess is incorrect, the player provides more information
+                #And these new information are added to make another guess
                 else:
                     more_info = answer["transcription"].split()
-                    # The first word of the answer will be 'no', so we don't take it and start with the second word
                     add_more_info = " ".join(more_info)
                     self.description["transcription"] = self.description["transcription"] + " " + add_more_info
                     self.update_chat_box_player(self.description["transcription"])
                     self.update_chat_box_ai("Incorrect. Ok I'll try again.")
+            #Error in player's answer
             else:
                 self.update_chat_box_ai(answer['error'] + '. Please repeat.')
                 self.no_error_in_ans = False
+        #If no error in player's description and answer 
         if self.description["transcription"] and self.no_error_in_ans:
             if self.call == 0:
                 self.update_chat_box_player(self.description["transcription"])
+            #Check if the player didn't say the taboo words
             for w in self.selected_words:
                 if w in self.description["transcription"]:
                     self.update_chat_box_ai("You said {}! It's not allowed, you lost.".format(w))
                     self.game_running = False
+            #Agent makes the guess
             if self.game_running:
                 self.taboo_game(self.description["transcription"])
+        #If error in player's description
         elif self.description["error"]:
             self.update_chat_box_ai(self.description["error"] + '. Please repeat.')
+            #Reset to zero
+            self.call= -1
+        #If the game was not stopped, loop over the function again
         if self.game_running:
             self.call += 1
             print(self.call)
@@ -194,6 +212,10 @@ class Gameplay():
     def update_chat_box_ai(self, new_line):
         self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
         self.chatbox.user_message("AI", new_line, "computer")
+        
+    ########################################################    
+    ##################TABOO GAME SCRIPT#####################
+    ########################################################
 
     # Select the Taboo words, the top 3 occuring words in each description
     def taboo_words(self):
@@ -202,8 +224,9 @@ class Gameplay():
         engine = inflect.engine()
         self.selected_words = []
         to_remove = []
+        #Get the animal description from ElasticSearch
         self.get_text = helpers.scan(self.es, query={"query": {"terms": {"_id": [str(animal)]}}}, scroll='1m',
-                                     index='zoo_cleaned')  # like others so far
+                                     index='zoo_cleaned')  
         full_text = [hit['_source']['wiki'] for hit in self.get_text]
         words = full_text[0].split()
         # Compute the most recurring words in the description
@@ -221,12 +244,15 @@ class Gameplay():
             if len(w) > 2:
                 self.selected_words.append(w)
         # Words appearing a lot in all descriptions
-        to_remove.extend(['areas', 'years', 'males', 'females', 'used', 'occur', 'called', 'western'])
+        to_remove.extend(['areas', 'years', 'males', 'females', 'used', 'occur', 'called', 'western', 'families', 'family'])
         self.selected_words = [w for w in self.selected_words if w.lower() not in to_remove]
         # Take the top 3 words
         self.selected_words = self.selected_words[:3]
+        #Append with animal name (forbidden as well)
+        self.selected_words.append(animal)
         return self.selected_words
-
+    
+    #ElasticSearch query
     def search_func(self, search_query):
 
         search_object = {
@@ -237,7 +263,8 @@ class Gameplay():
             }
         }
         return json.dumps(search_object)
-
+    
+    #Make the guess based on the ElasticSearch query
     def taboo_game(self, player_description):
         guesses_scoring = self.es.search(index='zoo_cleaned', body=self.search_func(player_description))
         for i in range(0, len(guesses_scoring)):
