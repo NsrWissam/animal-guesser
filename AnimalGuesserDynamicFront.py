@@ -20,8 +20,8 @@ import collections
 class Gameplay():
     def __init__(self):
         self.es = Elasticsearch(
-            hosts=["https://f613647524b24c5f849ec050b3e3fb1b.westeurope.azure.elastic-cloud.com:9243/"],
-            http_auth=("elastic", "YuIRd4ooNHbat2TZaHkDejO1"))
+            hosts=["https://d4e3033cb97744efaf30d6fb0aa64dc9.europe-west1.gcp.cloud.es.io:9243"],
+            http_auth=("elastic", "M00PV83HRM8ozH9k6CrXU1wB"))
         self.a = helpers.scan(self.es, query={"query": {"match_all": {}}}, scroll='1m',
                               index='zoo_raw')  # like others so far
         self.names = [aa['_id'] for aa in self.a]
@@ -267,14 +267,17 @@ class Gameplay():
     #Make the guess based on the ElasticSearch query
     def taboo_game(self, player_description):
         guesses_scoring = self.es.search(index='zoo_cleaned', body=self.search_func(player_description))
-        for i in range(0, len(guesses_scoring)):
-            guess = guesses_scoring['hits']['hits'][i]['_id']
-            if guess not in self.memory_guess:
-                self.memory_guess.append(guess)
-                self.update_chat_box_ai("Is it a {}?".format(guess))
-                break
-            else:
-                continue
+        if len(guesses_scoring['hits']['hits'])>0:
+            for i in range(0, len(guesses_scoring['hits']['hits'])):
+                guess = guesses_scoring['hits']['hits'][i]['_id']
+                if guess not in self.memory_guess:
+                    self.memory_guess.append(guess)
+                    self.update_chat_box_ai("Is it a {}?".format(guess))
+                    break
+                else:
+                    continue
+        else:
+            self.update_chat_box_ai("I have no idea of what you are describing, provide more info!")
 
     def reset_chat_box(self):
         self.chatbox.clear()
