@@ -4,14 +4,60 @@ from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 import pandas as pd
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
+import inflect
+
+#Define settings with customized analyzer
+settings = {
+    "settings":{
+          "analysis":{
+            "analyzer":{
+              "my_analyzer":{ 
+               "type":"custom",
+               "tokenizer":"standard",
+               "filter":[
+                  "lowercase",
+                  "english_stop",
+                  "porter_stem",
+                  "english_possessive_stemmer"
+               ]
+            }
+         },
+         "filter":{
+            "english_stop":{
+               "type":"stop",
+               "stopwords":"_english_"
+            },
+            "english_possessive_stemmer": {
+                "type":"stemmer",
+                "language":"possessive_english"
+        }
+         }
+      }
+   },
+        "mappings": {
+                "properties": {
+                    "name": {
+                        "type": "keyword"
+                    },
+                    "words": {
+                        "type": "keyword"
+                    },
+                    "wiki": {
+                        "type": "text",
+                        "analyzer": "my_analyzer"
+                    }
+                }
+            }
+        }
 
 def doc_generator(df):
     df_iter = df.iterrows()
     for index, document in df_iter:
         animal_name = document.animal
         dict_doc = document.to_dict()
+        #del dict_doc["animal"]
         yield {
-                "_index": 'zoo_v3',
+                "_index": 'zoo_raw',
                 "_id" : f"{animal_name}",
                 "_source": dict_doc,
             }
@@ -27,7 +73,6 @@ df.drop(df[df['animal'] == 'clam' ].index , inplace=True)
 df.drop(df[df['animal'] == 'cavy' ].index , inplace=True)
 df.drop(df[df['animal'] == 'crab' ].index , inplace=True)
 df.drop(df[df['animal'] == 'dogfish' ].index , inplace=True)
-df.drop(df[df['animal'] == 'seawasp' ].index , inplace=True)
 
 animals = df.animal.tolist()
 animals[2] = 'Bass (fish)'
@@ -44,15 +89,16 @@ animals[53] = 'Pike fish'
 animals[57] = 'Ferret'
 animals[58] = 'Ponyy'
 animals[60] = 'Cougar'
-animals[61] = 'Domestic cat'
+animals[61] = 'Felis catus'
 animals[64] = 'Rhea (bird)'
 animals[67] = 'Pinniped'
-animals[70] = 'Skimmer (bird)'
-animals[74] = 'sole (fish)'
-animals[75] = 'House sparrow'
-animals[84] = 'Tuna fish'
-animals[85] = 'Vampire bat'
-animals[91] = 'earthworm'
+animals[70] = 'Chironex fleckeri'
+animals[71] = 'skimmer (bird)'
+animals[75] = 'sole (fish)'
+animals[76] = 'House sparrow'
+animals[85] = 'Tuna fish'
+animals[86] = 'Vampire bat'
+animals[92] = 'earthworm'
 
 animal_names = df.animal.tolist()
 
@@ -126,14 +172,22 @@ for i, row in df.iterrows():
     print("processing: " + row['animal'])
     temp_obj = library_map.get(row['animal']).replace(row['animal'].lower(),"")
     temp_obj = temp_obj.replace(",", "").replace(".", "")
+    temp_obj = temp_obj.replace("(", "").replace(")", "") #Remove parentheses
+    #engine = inflect.engine()
+    #plural = engine.plural(str(row['animal']))
     #remove the animal name and all the stopwords from the wikipedia text
     words_to_remove = list(ENGLISH_STOP_WORDS) + [str(row['animal']), str(row['animal'].lower())] + row['animal'].split() + row['animal'].lower().split() 
+    #words_to_remove.extend([str(plural), str(plural.lower())]) #Remove the plural of the animal
+    #words_to_remove.extend(['-', '==', '====', '–', '===']) #Remove Wikipedia delimiters
+    #words_to_remove.extend(["s", "s'", "'s"]) #Remove english linking s'
+    #words_to_remove.extend(['species', 'specie', 'animal', 'animals', 'families', 'family']) #Remove unnecessary description (the whole list contains animals)
     temp_obj = remove_words(temp_obj, words_to_remove)
     animal_dict['wiki'] = temp_obj
     doc_df = doc_df.append(animal_dict,True)
     
-es = Elasticsearch(hosts=["https://70fa05be281c4ff8977b2a9e557f7690.westeurope.azure.elastic-cloud.com:9243/"], http_auth=("elastic","dpucymmIkDh7iOMjbUFFaRqA"))
+es = Elasticsearch(hosts=["https://d4e3033cb97744efaf30d6fb0aa64dc9.europe-west1.gcp.cloud.es.io:9243"], http_auth=("elastic","M00PV83HRM8ozH9k6CrXU1wB"))
 
-es.indices.create(index='zoo_v3', ignore=400)
+es.indices.create(index='zoo_raw', body=settings, ignore=400)
     
 helpers.bulk(es, doc_generator(doc_df))
+print(doc_generator(doc_df))
