@@ -15,16 +15,21 @@ import speech_recognition as sr
 import inflect
 import operator
 import collections
+import predict_animal_on_model
 
 
 class Gameplay():
     def __init__(self):
-        self.es = Elasticsearch(
-            hosts=["https://d4e3033cb97744efaf30d6fb0aa64dc9.europe-west1.gcp.cloud.es.io:9243"],
-            http_auth=("elastic", "M00PV83HRM8ozH9k6CrXU1wB"))
-        self.a = helpers.scan(self.es, query={"query": {"match_all": {}}}, scroll='1m',
-                              index='zoo_raw')  # like others so far
-        self.names = [aa['_id'] for aa in self.a]
+        #define online or offline playing
+        self.online = False
+
+        if self.online:
+            self.es = Elasticsearch(
+                hosts=["https://d4e3033cb97744efaf30d6fb0aa64dc9.europe-west1.gcp.cloud.es.io:9243"],
+                http_auth=("elastic", "M00PV83HRM8ozH9k6CrXU1wB"))
+            self.a = helpers.scan(self.es, query={"query": {"match_all": {}}}, scroll='1m',
+                                  index='zoo_raw')  # like others so far
+            self.names = [aa['_id'] for aa in self.a]
 
         self.root = tkinter.Tk()
         self.root.title("Animal Guesser")
@@ -36,6 +41,11 @@ class Gameplay():
         self.call = 0
         self.memory_guess = []
         self.time_out_job = None
+
+        # Create Animal Guesser
+        self.my_guesser = predict_animal_on_model.AnimalPredictor()
+        self.names = self.my_guesser.name_dict.keys()
+
 
         # Define styling
         self.s = tk.Style()
@@ -129,6 +139,10 @@ class Gameplay():
         self.root.destroy()
 
     def show_game_frame(self):
+        self.chatbox.clear()
+        self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
+        self.chatbox.user_message("AI", "Hi there player, press the Describe button when you are ready to play!",
+                                  "computer")
         self.game_frame.pack_forget()
         self.home_menu.pack_forget()
         self.selection_frame.pack_forget()
@@ -141,8 +155,8 @@ class Gameplay():
         self.lb_frame.pack_forget()
         self.home_menu.pack(fill=tkinter.BOTH, expand=1)
         self.root.after_cancel(self.time_out_job)
-        if self.game_running:
-            self.reset_game()
+        #if self.game_running:
+        self.reset_game()
             
 ###########################################################
 ###############SPEECH RECOGNITION SCRIPT###################
@@ -180,9 +194,10 @@ class Gameplay():
                     self.update_chat_box_ai("Incorrect. Ok I'll try again.")
             #Error in player's answer
             else:
-                self.update_chat_box_ai(answer['error'] + '. Please repeat.')
+                if self.game_running == True:
+                    self.update_chat_box_ai(answer['error'] + '. Please repeat.')
                 self.no_error_in_ans = False
-        #If no error in player's description and answer 
+        #If no error in player's description and answer
         if self.description["transcription"] and self.no_error_in_ans:
             if self.call == 0:
                 self.update_chat_box_player(self.description["transcription"])
@@ -193,7 +208,10 @@ class Gameplay():
                     self.game_running = False
             #Agent makes the guess
             if self.game_running:
-                self.taboo_game(self.description["transcription"])
+                if self.online == True:
+                    self.taboo_game(self.description["transcription"])
+                else:
+                    self.guess_animal(self.description["transcription"])
         #If error in player's description
         elif self.description["error"]:
             self.update_chat_box_ai(self.description["error"] + '. Please repeat.')
@@ -219,37 +237,41 @@ class Gameplay():
 
     # Select the Taboo words, the top 3 occuring words in each description
     def taboo_words(self):
-        animal = self.selected_animal.get()
-        counts = dict()
-        engine = inflect.engine()
-        self.selected_words = []
-        to_remove = []
-        #Get the animal description from ElasticSearch
-        self.get_text = helpers.scan(self.es, query={"query": {"terms": {"_id": [str(animal)]}}}, scroll='1m',
-                                     index='zoo_cleaned')  
-        full_text = [hit['_source']['wiki'] for hit in self.get_text]
-        words = full_text[0].split()
-        # Compute the most recurring words in the description
-        for word in words:
-            if word in counts:
-                counts[word] += 1
-            else:
-                counts[word] = 1
-        # Sort the dictionary to get the top three recurring words at the top
-        sorted_counts = sorted(counts.items(), key=operator.itemgetter(1), reverse=True)
-        sorted_dict = collections.OrderedDict(sorted_counts)
-        # Remove words with less than 2 characters (often missplit alone letters or numbers)
-        for w in list(sorted_dict.keys()):
-            # w.split()
-            if len(w) > 2:
-                self.selected_words.append(w)
-        # Words appearing a lot in all descriptions
-        to_remove.extend(['areas', 'years', 'males', 'females', 'used', 'occur', 'called', 'western', 'families', 'family'])
-        self.selected_words = [w for w in self.selected_words if w.lower() not in to_remove]
-        # Take the top 3 words
-        self.selected_words = self.selected_words[:3]
-        #Append with animal name (forbidden as well)
-        self.selected_words.append(animal)
+        if self.online:
+            animal = self.selected_animal.get()
+            counts = dict()
+            engine = inflect.engine()
+            self.selected_words = []
+            to_remove = []
+            #Get the animal description from ElasticSearch
+            self.get_text = helpers.scan(self.es, query={"query": {"terms": {"_id": [str(animal)]}}}, scroll='1m',
+                                         index='zoo_cleaned')
+            full_text = [hit['_source']['wiki'] for hit in self.get_text]
+            words = full_text[0].split()
+            # Compute the most recurring words in the description
+            for word in words:
+                if word in counts:
+                    counts[word] += 1
+                else:
+                    counts[word] = 1
+            # Sort the dictionary to get the top three recurring words at the top
+            sorted_counts = sorted(counts.items(), key=operator.itemgetter(1), reverse=True)
+            sorted_dict = collections.OrderedDict(sorted_counts)
+            # Remove words with less than 2 characters (often missplit alone letters or numbers)
+            for w in list(sorted_dict.keys()):
+                # w.split()
+                if len(w) > 2:
+                    self.selected_words.append(w)
+            # Words appearing a lot in all descriptions
+            to_remove.extend(['areas', 'years', 'males', 'females', 'used', 'occur', 'called', 'western', 'families', 'family'])
+            self.selected_words = [w for w in self.selected_words if w.lower() not in to_remove]
+            # Take the top 3 words
+            self.selected_words = self.selected_words[:3]
+            #Append with animal name (forbidden as well)
+            self.selected_words.append(animal)
+        else:
+            #play without taboo words
+            self.selected_words = ['offline', 'dummy', 'variables']
         return self.selected_words
     
     #ElasticSearch query
@@ -264,10 +286,11 @@ class Gameplay():
         }
         return json.dumps(search_object)
     
-    #Make the guess based on the ElasticSearch query
+
+    # Make the guess based on the ElasticSearch query
     def taboo_game(self, player_description):
         guesses_scoring = self.es.search(index='zoo_cleaned', body=self.search_func(player_description))
-        if len(guesses_scoring['hits']['hits'])>0:
+        if len(guesses_scoring['hits']['hits']) > 0:
             for i in range(0, len(guesses_scoring['hits']['hits'])):
                 guess = guesses_scoring['hits']['hits'][i]['_id']
                 if guess not in self.memory_guess:
@@ -279,6 +302,12 @@ class Gameplay():
         else:
             self.update_chat_box_ai("I have no idea of what you are describing, provide more info!")
 
+    def guess_animal(self, player_description):
+        ranking = self.my_guesser.get_prediction_ranking_exclude_wrong_animals(player_description, self.memory_guess)
+        guess = list(ranking.keys())[0]
+        self.memory_guess.append(guess)
+        self.update_chat_box_ai("Is it a {}?".format(guess))
+
     def reset_chat_box(self):
         self.chatbox.clear()
         self.chatbox.interior.pack(expand=True, fill=tkinter.BOTH)
@@ -289,7 +318,8 @@ class Gameplay():
         self.call = 0
         self.memory_guess = []
         self.reset_chat_box()
-        self.show_home_frame()
+        # TODO
+        #self.show_home_frame()
 
     def show_selection_frame(self):
         self.game_frame.pack_forget()
@@ -299,8 +329,10 @@ class Gameplay():
 
     def time_ran_out(self):
         self.update_chat_box_ai("Sorry your time ran out ... ")
-        self.update_chat_box_ai("We can try again !")
-        self.root.after(5000, lambda: self.reset_game())
+        self.update_chat_box_ai("We can try again, go back to homescreen to start new game !")
+        # TODO
+        self.game_running = False
+        self.out_of_time = True
 
     def doubleclick(self, event):
         cs = self.listbox.curselection()
