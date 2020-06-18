@@ -1,5 +1,11 @@
+##############################################
+########SPEECH RECOGNITION SCRIPT#############
+##############################################
+
+#Source: https://realpython.com/python-speech-recognition/ 
 import speech_recognition as sr
 
+key = "WTNETIPRDMSS4FMSMLUIVZAVRHX2KXC6"
 
 def recognize_speech_from_mic(recognizer, microphone):
     """Transcribe speech from recorded from `microphone`.
@@ -41,6 +47,7 @@ def recognize_speech_from_mic(recognizer, microphone):
     #     update the response object accordingly
     try:
         response["transcription"] = recognizer.recognize_google(audio)
+        #response["transcription"] = recognizer.recognize_wit(audio, key)
     except sr.RequestError:
         # API was unreachable or unresponsive
         response["success"] = False
