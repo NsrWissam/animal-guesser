@@ -1,8 +1,10 @@
-# sources :
+# Sources :
 # https://medium.com/swlh/lets-write-a-chat-app-in-python-f6783a9ac170
 # Chatbox :
 # http://code.activestate.com/recipes/580757-chatbox-megawidget-for-tkinter/
-#
+# Speech Recognition:
+# https://realpython.com/python-speech-recognition/
+
 
 import tkinter
 import tkinter.ttk as tk
@@ -12,7 +14,6 @@ from elasticsearch import helpers
 from Front_speech_from_mic import recognize_speech_from_mic
 import json
 import speech_recognition as sr
-import inflect
 import operator
 import collections
 import predict_animal_on_model
@@ -240,7 +241,6 @@ class Gameplay():
         if self.online:
             animal = self.selected_animal.get()
             counts = dict()
-            engine = inflect.engine()
             self.selected_words = []
             to_remove = []
             #Get the animal description from ElasticSearch
